@@ -21,6 +21,7 @@ library("gplots")
 library("lmtest")
 library(tidyverse)
 library(aws.s3)
+library(naniar)
 aws.signature::use_credentials()
 Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
 
@@ -112,7 +113,8 @@ TTFCONT <- rbind(TTF, Control)
 Seb_dataclean <- function(data, x){
   
   # Replace all -9999 with NA
-  data <- data %>% na_if(-9999)
+  # data <- data %>% na_if(-9999)  # Finn: This is the line in the original script, which throws an error
+  data <- data %>% replace_with_na_all(condition = ~.x == -9999) # Finn: This is my fix
   
   # We keep observations without na
   data <- data %>% drop_na()
