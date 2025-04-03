@@ -19,6 +19,12 @@ library("gridExtra")
 library("tidyr")
 library("gplots")
 library("lmtest")
+library(tidyverse)
+library(aws.s3)
+aws.signature::use_credentials()
+Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
+
+
 
 # Code Structure
 
@@ -37,17 +43,24 @@ library("lmtest")
 # and offset of origin. 
 
 tidy_data <-function(path, name, number, label){
-  name = read.dbf(path)
+  name = s3read_using(
+    object = path,
+    FUN = read.dbf,
+    bucket = "trase-app"
+  )
   name = subset(name, select= -c(1, 16))
   name$treated = number              # Number = 1 for pixels from an offset and 0 for control pixels. 
   name$offset = label
   return(name)
 }
 
-TTF <- tidy_data("Input_data/Final_covariates/Sample_TTF3.dbf", TTF, 1, "TTF")           
-ANK <- tidy_data("Input_data/Final_covariates/Sample_ANK3.dbf", ANK, 1, "ANK")
-CFAM <- tidy_data("Input_data/Final_covariates/Sample_CFAM3.dbf", CFAM, 1, "CFAM")
-CZ <- tidy_data("Input_data/Final_covariates/Sample_CZ3.dbf", CZ, 1, "CZ")
+
+
+
+TTF <- tidy_data("data/GOTTINGEN/Sample_TTF3.dbf", TTF, 1, "TTF")           
+ANK <- tidy_data("data/GOTTINGEN/Sample_ANK3.dbf", ANK, 1, "ANK")
+CFAM <- tidy_data("data/GOTTINGEN/Sample_CFAM3.dbf", CFAM, 1, "CFAM")
+CZ <- tidy_data("data/GOTTINGEN/Sample_CZ3.dbf", CZ, 1, "CZ")
 
 # TTF = Torotorofotsy
 # ANK = Ankerana
@@ -57,7 +70,13 @@ CZ <- tidy_data("Input_data/Final_covariates/Sample_CZ3.dbf", CZ, 1, "CZ")
 
 # Load Control separately because columns are different # 
 
-Control = read.dbf("Input_data/Final_covariates/Final_control.dbf")
+Control = s3read_using(
+  object = "data/GOTTINGEN/Final_control.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+  
+
 Control$treated = 0
 Control$offset = "Cont"
 Control <- subset(Control, select = -c(4))        # Remove unwanted fire variable
