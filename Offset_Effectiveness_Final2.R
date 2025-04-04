@@ -22,6 +22,7 @@ library("lmtest")
 library(tidyverse)
 library(aws.s3)
 library(naniar)
+library(lme4)
 aws.signature::use_credentials()
 Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
 
@@ -149,17 +150,41 @@ ANKCONT <- Seb_dataclean(data = ANKCONT, x= 1)
 ANKCONT$ID <- seq(nrow(ANKCONT))              # Add column for observation ID
 rownames(ANKCONT) <- ANKCONT$ID
 
+s3write_using(ANKCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/ANKCONT.RDS",
+              bucket = "trase-app"
+              )
+
 CZCONT <- Seb_dataclean(CZCONT, 1)
 CZCONT$ID <- seq(nrow(CZCONT))
 rownames(CZCONT) <- CZCONT$ID
+
+s3write_using(CZCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CZCONT.RDS",
+              bucket = "trase-app"
+)
 
 CFAMCONT <- Seb_dataclean(CFAMCONT, 1)
 CFAMCONT$ID <- seq(nrow(CFAMCONT))
 rownames(CFAMCONT) <- CFAMCONT$ID 
 
+s3write_using(CFAMCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CFAMCONT.RDS",
+              bucket = "trase-app"
+)
+
 TTFCONT <- Seb_dataclean(TTFCONT, 1)
 TTFCONT$ID <- seq(nrow(TTFCONT))
 rownames(TTFCONT) <- TTFCONT$ID
+
+s3write_using(TTFCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/TTFCONT.RDS",
+              bucket = "trase-app"
+)
 
 
 #----------------------------2) The Matching -----------------------------------------#
@@ -447,12 +472,33 @@ ATT_all <- rbind(ATT_ANK, ATT_CZ, ATT_TTF)
 # of deforestation which has been avoided through protection. 
 
 
-ANK_dat <- read.dbf("Input_data/ANK_var.dbf")      
-CFAM_dat <- read.dbf("Input_data/CFAM_var.dbf")
-CZ_dat <- read.dbf("Input_data/CZ_var.dbf")
+
+ANK_dat <- s3read_using(
+  object = "data/GOTTINGEN/Ank_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+   
+CFAM_dat <- s3read_using(
+  object = "data/GOTTINGEN/CFAM_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+  
+CZ_dat <- s3read_using(
+  object = "data/GOTTINGEN/CZ_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+
+  
 CZ_dat$VALUE_5 <- 0                                # Fill in missing value. No tree loss in CZ in 2005
 CZ_dat <- CZ_dat[,c(1:7,34,8:33)]                 # Re-order columns to match other datasets
-TTF_dat <- read.dbf("Input_data/Torotorofotsy_var.dbf")
+TTF_dat <- s3read_using(
+  object = "data/GOTTINGEN/Torotorofotsy_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
 
 
             # a) Calculate observed, counterfactual and avoided deforestation (plus Upper and Lower CIs)
