@@ -149,17 +149,41 @@ ANKCONT <- Seb_dataclean(data = ANKCONT, x= 1)
 ANKCONT$ID <- seq(nrow(ANKCONT))              # Add column for observation ID
 rownames(ANKCONT) <- ANKCONT$ID
 
+s3write_using(ANKCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/ANKCONT.RDS",
+              bucket = "trase-app"
+              )
+
 CZCONT <- Seb_dataclean(CZCONT, 1)
 CZCONT$ID <- seq(nrow(CZCONT))
 rownames(CZCONT) <- CZCONT$ID
+
+s3write_using(CZCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/CZCONT.RDS",
+              bucket = "trase-app"
+)
 
 CFAMCONT <- Seb_dataclean(CFAMCONT, 1)
 CFAMCONT$ID <- seq(nrow(CFAMCONT))
 rownames(CFAMCONT) <- CFAMCONT$ID 
 
+s3write_using(CFAMCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/CFAMCONT.RDS",
+              bucket = "trase-app"
+)
+
 TTFCONT <- Seb_dataclean(TTFCONT, 1)
 TTFCONT$ID <- seq(nrow(TTFCONT))
 rownames(TTFCONT) <- TTFCONT$ID
+
+s3write_using(TTFCONT,
+              FUN=saveRDS,
+              object = "data/GOTTINGEN/tmp/TTFCONT.RDS",
+              bucket = "trase-app"
+)
 
 
 #----------------------------2) The Matching -----------------------------------------#
