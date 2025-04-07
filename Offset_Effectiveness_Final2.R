@@ -152,11 +152,7 @@ rownames(ANKCONT) <- ANKCONT$ID
 
 s3write_using(ANKCONT,
               FUN=saveRDS,
-<<<<<<< HEAD
               object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/ANKCONT.RDS",
-=======
-              object = "data/GOTTINGEN/tmp/ANKCONT.RDS",
->>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
               bucket = "trase-app"
               )
 
@@ -166,11 +162,7 @@ rownames(CZCONT) <- CZCONT$ID
 
 s3write_using(CZCONT,
               FUN=saveRDS,
-<<<<<<< HEAD
               object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CZCONT.RDS",
-=======
-              object = "data/GOTTINGEN/tmp/CZCONT.RDS",
->>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
               bucket = "trase-app"
 )
 
@@ -180,11 +172,7 @@ rownames(CFAMCONT) <- CFAMCONT$ID
 
 s3write_using(CFAMCONT,
               FUN=saveRDS,
-<<<<<<< HEAD
               object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CFAMCONT.RDS",
-=======
-              object = "data/GOTTINGEN/tmp/CFAMCONT.RDS",
->>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
               bucket = "trase-app"
 )
 
@@ -194,11 +182,7 @@ rownames(TTFCONT) <- TTFCONT$ID
 
 s3write_using(TTFCONT,
               FUN=saveRDS,
-<<<<<<< HEAD
               object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/TTFCONT.RDS",
-=======
-              object = "data/GOTTINGEN/tmp/TTFCONT.RDS",
->>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
               bucket = "trase-app"
 )
 
