@@ -21,6 +21,8 @@ library("gplots")
 library("lmtest")
 library(tidyverse)
 library(aws.s3)
+library(naniar)
+library(lme4)
 aws.signature::use_credentials()
 Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
 
@@ -112,7 +114,8 @@ TTFCONT <- rbind(TTF, Control)
 Seb_dataclean <- function(data, x){
   
   # Replace all -9999 with NA
-  data <- data %>% na_if(-9999)
+  # data <- data %>% na_if(-9999)  # Finn: This is the line in the original script, which throws an error
+  data <- data %>% replace_with_na_all(condition = ~.x == -9999) # Finn: This is my fix
   
   # We keep observations without na
   data <- data %>% drop_na()
@@ -147,17 +150,57 @@ ANKCONT <- Seb_dataclean(data = ANKCONT, x= 1)
 ANKCONT$ID <- seq(nrow(ANKCONT))              # Add column for observation ID
 rownames(ANKCONT) <- ANKCONT$ID
 
+s3write_using(ANKCONT,
+              FUN=saveRDS,
+<<<<<<< HEAD
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/ANKCONT.RDS",
+=======
+              object = "data/GOTTINGEN/tmp/ANKCONT.RDS",
+>>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
+              bucket = "trase-app"
+              )
+
 CZCONT <- Seb_dataclean(CZCONT, 1)
 CZCONT$ID <- seq(nrow(CZCONT))
 rownames(CZCONT) <- CZCONT$ID
+
+s3write_using(CZCONT,
+              FUN=saveRDS,
+<<<<<<< HEAD
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CZCONT.RDS",
+=======
+              object = "data/GOTTINGEN/tmp/CZCONT.RDS",
+>>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
+              bucket = "trase-app"
+)
 
 CFAMCONT <- Seb_dataclean(CFAMCONT, 1)
 CFAMCONT$ID <- seq(nrow(CFAMCONT))
 rownames(CFAMCONT) <- CFAMCONT$ID 
 
+s3write_using(CFAMCONT,
+              FUN=saveRDS,
+<<<<<<< HEAD
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CFAMCONT.RDS",
+=======
+              object = "data/GOTTINGEN/tmp/CFAMCONT.RDS",
+>>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
+              bucket = "trase-app"
+)
+
 TTFCONT <- Seb_dataclean(TTFCONT, 1)
 TTFCONT$ID <- seq(nrow(TTFCONT))
 rownames(TTFCONT) <- TTFCONT$ID
+
+s3write_using(TTFCONT,
+              FUN=saveRDS,
+<<<<<<< HEAD
+              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/TTFCONT.RDS",
+=======
+              object = "data/GOTTINGEN/tmp/TTFCONT.RDS",
+>>>>>>> 9a482758be9ef2d094bc779b6e09e23e104223ef
+              bucket = "trase-app"
+)
 
 
 #----------------------------2) The Matching -----------------------------------------#
@@ -445,12 +488,33 @@ ATT_all <- rbind(ATT_ANK, ATT_CZ, ATT_TTF)
 # of deforestation which has been avoided through protection. 
 
 
-ANK_dat <- read.dbf("Input_data/ANK_var.dbf")      
-CFAM_dat <- read.dbf("Input_data/CFAM_var.dbf")
-CZ_dat <- read.dbf("Input_data/CZ_var.dbf")
+
+ANK_dat <- s3read_using(
+  object = "data/GOTTINGEN/Ank_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+   
+CFAM_dat <- s3read_using(
+  object = "data/GOTTINGEN/CFAM_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+  
+CZ_dat <- s3read_using(
+  object = "data/GOTTINGEN/CZ_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+
+  
 CZ_dat$VALUE_5 <- 0                                # Fill in missing value. No tree loss in CZ in 2005
 CZ_dat <- CZ_dat[,c(1:7,34,8:33)]                 # Re-order columns to match other datasets
-TTF_dat <- read.dbf("Input_data/Torotorofotsy_var.dbf")
+TTF_dat <- s3read_using(
+  object = "data/GOTTINGEN/Torotorofotsy_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
 
 
             # a) Calculate observed, counterfactual and avoided deforestation (plus Upper and Lower CIs)
