@@ -1,0 +1,109 @@
+---
+title: "Visualise the matches"
+author: "Erasmus"
+date: "2025-04-03"
+output: html_document
+---
+
+Initial script to visualise the matches [in progress]
+
+TODO: 
+Load the final matches pre-visualisation.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(aws.s3)
+library(foreign)
+library(sf)
+aws.signature::use_credentials()
+Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
+
+# These database files contain forest cover and annual tree loss data for the whole area of each biodiversity offset.
+# Load the files one-by-one
+ANK <- s3read_using(
+  object = "data/GOTTINGEN/Sample_ANK3.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app", 
+  
+)
+CFAM <- s3read_using(
+  object = "data/GOTTINGEN/Sample_CFAM3.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+CZ <- s3read_using(
+  object = "data/GOTTINGEN/Sample_CZ3.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+TTF <- s3read_using(
+  object = "data/GOTTINGEN/Sample_TTF3.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+
+# Load Control separately because columns are different # 
+Control <- s3read_using(
+  object = "data/GOTTINGEN/Final_control.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+
+Control$treated = 0
+Control$offset = "Cont"
+Control <- subset(Control, select = -c(4))        # Remove unwanted fire variable
+Control <- Control[,c(2,3,1,4:16)]                # Re-order columns to match offset dataframes
+
+
+# Rename columns #
+
+cols <- c("X","Y","Tree_loss", "Pop_density", "Dist_sett", "Slope", "Elevation", "Aspect", "Annual_Rain",
+          "Dist_track", "Dist_road", "Dist_river", "Dist_edge", "Dist_defor", "treated", "offset")
+
+names(Control) <- paste0(cols)
+names(ANK) <- paste0(cols)
+names(CZ) <- paste0(cols)
+names(CFAM) <- paste0(cols)
+names(TTF) <- paste0(cols)
+
+# Merge each offset with the control dataset 
+# These offset + control datasets will be the input for matching #
+
+# ANKCONT <- rbind(ANK, Control)
+# CZCONT <- rbind(CZ, Control)
+# CFAMCONT <- rbind(CFAM, Control)
+# TTFCONT <- rbind(TTF, Control)
+
+```
+
+Check the dimensions of each offset's dataset
+``` {r}
+map(
+  list(ANK, TTF, CFAM, CZ, Control), 
+  dim
+)
+```
+
+Visualise the offset and the control locations
+``` {r}
+data_all <-
+  bind_rows("ANK" = ANK, "TTF" = TTF, "CFAM" = CFAM, "CZ" = CZ,
+            "CONTROLS" = Control,
+            .id = "LOCATION"
+            )
+# ggplot(data = ttf3, aes(x = X, y = Y, col = LOCATION)) + 
+#   geom_point()
+
+# Convert to sf
+data_all_sf <- st_as_sf(x = data_all, coords = c("X", "Y"), crs = 32738)
+## make a df with only the country to overlap
+# madagascar <- map_data('world')[map_data('world')$region == "Madagascar",]
+# madagascar <- st_as_sf(madagascar, coords = c("long", "lat"))
+# madagascar <- map_data("world", region = "Madagascar")
+ggplot() + 
+  # geom_sf(data = madagascar) +
+  # borders("world")
+  geom_sf(data = data_all_sf, aes(col = LOCATION))
+```
