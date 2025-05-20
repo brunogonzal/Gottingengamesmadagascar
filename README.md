@@ -7,11 +7,14 @@ The original scripts and data can be found in [this repository](https://github.c
 
 # Folders Description
 
-- 1.Replication_scripts
+- 1-Replication_scripts
 
 	This folder holds the altered scripts to run the replication. It changes the paths from the local folder to an online repository, and install some missing libraries found on the original project.
 
-- 2.Extended_data_analysis
+- 2-Extended_data_analysis
 
 	This folder holds the scripts used for the extended analysis the replicators did to investigate if the results of the study would alter if more years were added to the dataset (Global Forest Watch dataset up until 2023) or if the dataset was swithched for another one (Tropical Moist Forests dataset).
 
+- 3-Bootstrapping_Robustness_Check
+
+	This folder holds the scripts used for the uncertainty robusteness check. This was used by the replicators to investigate if adding uncertainty by bootstrapping the results would alter the analysis.
