@@ -1,13 +1,11 @@
-# Biodiversity_offset_effectiveness
-This repository contains code and input data used in the paper under review 'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' by Katie Devenish, Sebastien Desbureaux, Simon Willcock and Julia PG Jones. 
+# Replication of the 'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' paper
+This repository contains code and input data used in to replicate the results  found in the  'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' by Katie Devenish, Sebastien Desbureaux, Simon Willcock and Julia PG Jones.
 
-# Input data
+# Folders Description
 
-- Final_control.dbf
-- Sample_TTF3.dbf
-- Sample_ANK3.dbf
-- Sample_CFAM3.dbf
-- Sample_CZ3.dbf
+- 1.Original_files
+--
+- 2.Extended_data_analysis
 
 These are the input data for the matching and outcome regressions. Each observation contains covariate and outcome variable values at sample pixel locations (denoted in X,Y co-ordinates) from the four offsets and the control area. The outcome variable is Tree Loss Year from the Global Forest Change dataset of Hansen et al (2013) and refers to the year in which a pixel was deforested between 2001 and 2019. If the pixel was not deforested during this period the value is set as 0.
 
