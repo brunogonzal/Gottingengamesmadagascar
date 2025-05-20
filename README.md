@@ -1,32 +1,11 @@
 # Replication of the 'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' paper
-This repository contains code and input data used in to replicate the results  found in the  'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' by Katie Devenish, Sebastien Desbureaux, Simon Willcock and Julia PG Jones.
+This repository contains code and input data used in to replicate the results  found in the paper 'Madagascar's biggest mine is on track to achieve No Net Loss of Forest' by Katie Devenish, Sebastien Desbureaux, Simon Willcock and Julia PG Jones.
+This project was a part of the Gottingen Replication Games 2025. The original scripts and data can be found in [this repository](https://github.com/katie-devs/Biodiversity_offset_effectiveness/tree/main).
 
 # Folders Description
 
-- 1.Original_files
---
+- 1.Replication_scripts
+	This folder holds the altered scripts to run the replication. It changes the paths from the local folder to an online repository, and install some missing libraries found on the original project.
 - 2.Extended_data_analysis
-
-These are the input data for the matching and outcome regressions. Each observation contains covariate and outcome variable values at sample pixel locations (denoted in X,Y co-ordinates) from the four offsets and the control area. The outcome variable is Tree Loss Year from the Global Forest Change dataset of Hansen et al (2013) and refers to the year in which a pixel was deforested between 2001 and 2019. If the pixel was not deforested during this period the value is set as 0.
-
-- ANK_var.dbf
-- CFAM_var.dbf
-- CZ_var.dbf
-- Torotorofotsy_var.dbf
-
-These database files contain forest cover and annual tree loss data for the whole area of each biodiversity offset. These data were used to quantify the avoided deforestation following protection. 
-
-# Scripts
-
-1) Choosing_matching_spec - details the alternative matching specifications tested for covariate balance before choosing the main specification. 
-2) Offset_Effectiveness_Final2 - code for the matching and outcome regressions using the main matching specification. This produces the main results presented in the paper.
-3) Figures - code used to produce the figures presented in the paper
-4) Robustness_functions_v4_withyearloop -
-5) Offset_effectiveness_slim_lopp_func4 - 
-6) FE_loop - 4), 5) and 6) are the loops for the robustness checks
-9) Adding_time_trend - tests the effect of including a time trend in the difference-in-differences regression. 
-10) Pop_density - shows the correlation of Population Density with the 5 essential covariates. 
-11) Impact_modelling_choices - regression to explore which modelling choices have the greatest influence on the estimated treatment effect using the 496 estimates from the robustness checks.
-12) 2B_AOB_spec_graph_modifiedhighlight - This is the code for the specification graphs developed by Ariel Ortiz-Bobea used to plot the results from our robustness checks (Ortiz-Bobea, A., Ault, T. R., Carrillo, C. M., Chambers, R. G. & Lobell, D. B. Anthropogenic climate change has slowed global agricultural productivity growth. doi:10.1038/s41558-021-01000-1.)
-
+	This folder holds the scripts used for the extended analysis the replicators did to investigate if the results of the study would alter if more years were added to the dataset (Global Forest Watch dataset up until 2023) or if the dataset was swithched for another one (Tropical Moist Forests dataset).
 
