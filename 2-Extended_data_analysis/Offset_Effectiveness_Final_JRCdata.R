@@ -23,9 +23,13 @@ library(tidyverse)
 library(aws.s3)
 library(naniar)
 library(lme4)
-aws.signature::use_credentials()
-Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
+library(rstudioapi)
 
+# Get the path of the currently open script
+script_path <- rstudioapi::getSourceEditorContext()$path
+script_dir <- dirname(script_path)
+
+setwd(script_dir)  # Set working directory to script's directory
 
 
 # Code Structure
@@ -44,11 +48,7 @@ Sys.setenv("AWS_DEFAULT_REGION" = "eu-west-1")
 # Function to read in input data for each offset, remove unnecessary columns and add column to indicate treatment status
 # and offset of origin. 
 
-JRC_data <- s3read_using(
-  object = "data/GOTTINGEN/devenish_2022_allsites_controls_jrc_def_deg_gfw_def.csv",
-  FUN = read.csv,
-  bucket = "trase-app"
-)
+JRC_data <- readRDS("devenish_2022_allsites_controls_jrc_def_deg_gfw_def")
 
 TTF <- JRC_data[JRC_data$SOURCE == "TTF",]
 TTF <- TTF[,c(12,13,14,9,16,4,3,2,10,8,7,6,5,21)]
@@ -140,66 +140,31 @@ Seb_dataclean <- function(data, x){
 #ANKCONT <- Seb_dataclean(data = ANKCONT, x= 1)
 #ANKCONT$ID <- seq(nrow(ANKCONT))              # Add column for observation ID
 #rownames(ANKCONT) <- ANKCONT$ID
+#ANKCONT <- saveRDS(ANKCONT,"ANKCONT_JRC.RDS")
 
-#s3write_using(ANKCONT,
-#              FUN=saveRDS,
-#              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/ANKCONT_JRC.RDS",
-#              bucket = "trase-app"
-#              )
+ANKCONT <- readRDS("ANKCONT_JRC.RDS")
 
-ANKCONT <- s3read_using(
-  object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/ANKCONT_JRC.RDS",
-  FUN = readRDS,
-  bucket = "trase-app"
-)
 
 #CZCONT <- Seb_dataclean(CZCONT, 1)
 #CZCONT$ID <- seq(nrow(CZCONT))
 #rownames(CZCONT) <- CZCONT$ID
+#CZCONT <- saveRDS(CZCONT,"CZCONT_JRC.RDS")
 
-#s3write_using(CZCONT,
-#              FUN=saveRDS,
-#              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CZCONT_JRC.RDS",
-#              bucket = "trase-app"
-#)
-
-CZCONT <- s3read_using(
-  object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CZCONT_JRC.RDS", 
-  FUN = readRDS,
-  bucket = "trase-app"
-)
+CZCONT <- readRDS("CZCONT_JRC.RDS")
 
 #CFAMCONT <- Seb_dataclean(CFAMCONT, 1)
 #CFAMCONT$ID <- seq(nrow(CFAMCONT))
 #rownames(CFAMCONT) <- CFAMCONT$ID 
+#CFAMCONT <- saveRDS(CFAMCONT,"CFAMCONT_JRC.RDS")
 
-#s3write_using(CFAMCONT,
-#              FUN=saveRDS,
-#              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CFAMCONT_JRC.RDS",
-#              bucket = "trase-app"
-#)
-
-CFAMCONT <- s3read_using(
-  object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/CFAMCONT_JRC.RDS",
-  FUN = readRDS,
-  bucket = "trase-app"
-)
+CFAMCONT <- readRDS("CFAMCONT_JRC.RDS")
 
 #TTFCONT <- Seb_dataclean(TTFCONT, 1)
 #TTFCONT$ID <- seq(nrow(TTFCONT))
 #rownames(TTFCONT) <- TTFCONT$ID
+#TTFCONT <- saveRDS(TTFCONT,"TTFCONT_JRC.RDS")
 
-#s3write_using(TTFCONT,
-#              FUN=saveRDS,
-#              object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/TTFCONT_JRC.RDS",
-#              bucket = "trase-app"
-#)
-
-TTFCONT <- s3read_using(
-  object = "data/GOTTINGEN/tmp/Offset_Effectiveness_Final2/TTFCONT_JRC.RDS",
-  FUN = readRDS,
-  bucket = "trase-app"
-)
+TTFCONT <- readRDS("TTFCONT_JRC.RDS")
 
 #----------------------------2) The Matching -----------------------------------------#
 
