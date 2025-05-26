@@ -48,7 +48,7 @@ setwd(script_dir)  # Set working directory to script's directory
 # Function to read in input data for each offset, remove unnecessary columns and add column to indicate treatment status
 # and offset of origin. 
 
-JRC_data <- readRDS("devenish_2022_allsites_controls_jrc_def_deg_gfw_def")
+JRC_data <- read.csv("devenish_2022_allsites_controls_jrc_def_deg_gfw_def.csv")
 
 TTF <- JRC_data[JRC_data$SOURCE == "TTF",]
 TTF <- TTF[,c(12,13,14,9,16,4,3,2,10,8,7,6,5,21)]
