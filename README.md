@@ -19,7 +19,7 @@ The original scripts and data can be found in [this repository](https://github.c
 
 	This folder holds the scripts used for the uncertainty robusteness check. This was used by the replicators to investigate if adding uncertainty by bootstrapping the results would alter the analysis.
 	
-- 4-
+- 4-Outcome_transformation
 	
 	This folder holds the scripts used for the count data transformation robusteness check. This was used to see if different transformations of the original data could alter the results.
 	
