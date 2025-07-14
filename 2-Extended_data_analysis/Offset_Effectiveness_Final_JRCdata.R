@@ -444,7 +444,7 @@ ATT_TTF <- tidy_data5e(modelTTF, "TTF")
 
 ATT_all <- rbind(ATT_ANK, ATT_CZ, ATT_TTF)
 
-#--------------------------------7) Fixed Effects Panel regression ----------------------------------------------#
+#--------------------------------7) Fixed Effects Panel regression - ALL DATA ----------------------------------------------#
 
 # Second outcome regression. This allows us to estimate the effect of protection across the entire offset portfolio,
 # controlling for site and year fixed effects. This helps to control for any unobserved bias.   
@@ -456,12 +456,6 @@ ANK_FE_dat <- annual_defor_ANK
 CFAM_FE_dat <- annual_defor_CFAM
 CZ_FE_dat <- annual_defor_CZ
 TTF_FE_dat <- annual_defor_TTF
-
-ANK_FE_dat <- ANK_FE_dat[ANK_FE_dat$Year <= 2019,]
-CFAM_FE_dat <- CFAM_FE_dat[CFAM_FE_dat$Year <= 2019,]
-CZ_FE_dat <- CZ_FE_dat[CZ_FE_dat$Year <= 2019,]
-TTF_FE_dat <- TTF_FE_dat[TTF_FE_dat$Year <= 2019,]
-
 
 # Pool data. 
 
@@ -512,7 +506,6 @@ FE_MinusCFAM <- plm(log_annual_defor_newdata ~ Tr,
                     data= FE_datMinusCFAM, index = c("Sample", "Year"), model= "within", effect = "twoways")
 summary(FE_MinusCFAM)
 
-
 (exp(coef(FE_MinusCFAM))-1)*100              # EXCLUDING CFAM
 (exp(confint(FE_MinusCFAM))-1)*100           # EXCLUDING CFAM
 
@@ -538,9 +531,86 @@ summary(m1)
 (exp(-0.7476)-1)*100
 (exp(confint(m1))-1)*100
 
-# Results are very similar, and within the confidence intervals to the results from the FE panel regression. 
-# They indicate a 53% (-27 to -69%) reduction in deforestation following protection. 
+#--------------------------------7) Fixed Effects Panel regression - JUST UNTIL 2019 ----------------------------------------------#
 
+# Second outcome regression. This allows us to estimate the effect of protection across the entire offset portfolio,
+# controlling for site and year fixed effects. This helps to control for any unobserved bias.   
+
+
+# a) Data Construction 
+
+ANK_FE_dat <- annual_defor_ANK
+CFAM_FE_dat <- annual_defor_CFAM
+CZ_FE_dat <- annual_defor_CZ
+TTF_FE_dat <- annual_defor_TTF
+
+ANK_FE_dat <- ANK_FE_dat[ANK_FE_dat$Year <= 2019,]
+CFAM_FE_dat <- CFAM_FE_dat[CFAM_FE_dat$Year <= 2019,]
+CZ_FE_dat <- CZ_FE_dat[CZ_FE_dat$Year <= 2019,]
+TTF_FE_dat <- TTF_FE_dat[TTF_FE_dat$Year <= 2019,]
+
+
+# Pool data. 
+
+levels(ANK_FE_dat$Sample)[levels(ANK_FE_dat$Sample) == "Cont"] <- "ANK1"
+levels(CFAM_FE_dat$Sample)[levels(CFAM_FE_dat$Sample) == "Cont"] <- "CFAM1"
+levels(CZ_FE_dat$Sample)[levels(CZ_FE_dat$Sample) == "Cont"] <- "CZ1"
+levels(TTF_FE_dat$Sample)[levels(TTF_FE_dat$Sample) == "Cont"] <- "TTF1"
+
+FE_dat <- rbind(ANK_FE_dat, CFAM_FE_dat, CZ_FE_dat, TTF_FE_dat)
+FE_dat$Year <- factor(FE_dat$Year)
+
+FE_dat$Tr <- ifelse(FE_dat$TreatedF== "1" & FE_dat$TimeF== "1",1,0) 
+
+plotmeans(log_annual_defor_newdata ~ Sample, data = FE_dat)
+plotmeans(log_annual_defor_newdata ~ Year, data = FE_dat)
+
+
+# b) Fixed Effects Panel Regression 
+
+FE_all <- plm(log_annual_defor_newdata ~ Tr, 
+              data= FE_dat, index = c("Sample", "Year"), model= "within", effect = "twoways")
+summary(FE_all)
+
+# Tr is the coefficient of interest. A significant negative coefficient indicates a significant reduction in the log-transformed
+# count of deforestation following protection of the four biodiversity offsets.
+
+# Back-transform the estimates.
+
+(exp(coef(FE_all))-1)*100             
+(exp(confint(FE_all))-1)*100           # the entire offset portfolio 
+
+
+FE_datMinusCFAM <- FE_dat[FE_dat$Sample != "CFAM" & FE_dat$Sample != "CFAM1",]
+FE_MinusCFAM <- plm(log_annual_defor_newdata ~ Tr, 
+                    data= FE_datMinusCFAM, index = c("Sample", "Year"), model= "within", effect = "twoways")
+summary(FE_MinusCFAM)
+
+
+(exp(coef(FE_MinusCFAM))-1)*100              # EXCLUDING CFAM
+(exp(confint(FE_MinusCFAM))-1)*100           # EXCLUDING CFAM
+
+
+# c) Tests 
+
+# Compare to simple ols regression to test whether the fixed effects are needed. 
+
+ols2 <- lm(log_annual_defor_newdata ~ Tr, data = FE_dat)
+summary(ols2)
+
+pFtest(FE_all, ols2)
+
+# p<0.05 so there is significant heterogeneity between groups and over time - the fixed effects are needed.
+
+
+#                               d) Try also using random effects
+
+m1<-lmer(log_annual_defor_newdata ~ Tr  + (1|Sample)+(1|Year),
+         data= FE_dat)
+summary(m1)
+
+(exp(-0.7476)-1)*100
+(exp(confint(m1))-1)*100
 
 
 #                                e) Calculate avoided deforestation across entire offset portfolio
@@ -640,12 +710,13 @@ sum_overall_defor[1, c(6,7,8)] <- sum_overall_defor[1, c(6,7,8)]*-1             
 sum_overall_defor
 subset_years <- 14:19
 
-mean_avoided <- mean(offsets_defor$avoided_defor[offsets_defor$Year %in% subset_years])
-impact_mean <- -sum_overall_defor$Impact_defor
-impact_upper <- -sum_overall_defor$Impact_defor_Lower
-impact_lower <- -sum_overall_defor$Impact_defor_Upper
+mean_avoided <- mean(offsets_defor$avoided_defor[offsets_defor$Year >= 14])
+impact_upper <- -sum_overall_defor$Impact_defor_Upper
+impact_lower <- -sum_overall_defor$Impact_defor_Lower
 
 years_upper <- impact_upper / mean_avoided
 years_lower <- impact_lower / mean_avoided
+
+mean_avoided
 2014 + years_upper
 2014 + years_lower
