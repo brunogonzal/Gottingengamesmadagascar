@@ -1,14 +1,10 @@
-# Code by Katie Devenish# and Sebastien Desbureaux. 
-# ktd19ycv@bangor.ac.uk
-
-# This code is used in the publication entitled "Madagascar's biggest mine is set to achieve No Net Loss of Forest"
-# Authors: Katie Devenish, Sebastien Desbureaux, Simon Willcock and Julia Jones. 2021.
+# Original Code by Katie Devenish# and Sebastien Desbureaux. 
+# Changes made to replicate it using new dataset (the data loaded is what changes)
 
 # Load libraries #
 
 library("foreign")
 library("dplyr")
-library("xlsx")
 library("ggplot2")
 library("broom")
 library("MatchIt")
@@ -48,7 +44,7 @@ setwd(script_dir)  # Set working directory to script's directory
 # Function to read in input data for each offset, remove unnecessary columns and add column to indicate treatment status
 # and offset of origin. 
 
-JRC_data <- read.csv("devenish_2022_allsites_controls_jrc_def_deg_gfw_def.csv")
+JRC_data <- readRDS("devenish_2022_allsites_controls_jrc_def_deg_gfw_def")
 
 TTF <- JRC_data[JRC_data$SOURCE == "TTF",]
 TTF <- TTF[,c(12,13,14,9,16,4,3,2,10,8,7,6,5,21)]
@@ -306,8 +302,8 @@ annual_defor_TTF$Perc_Annual_Defor <- (annual_defor_TTF$Annual_Deforestation/(nr
 
 #-------------------------------5) Difference in Differences Regression -----------------------------------------#
 
-                                 # a) Data Construction 
-                                  
+# a) Data Construction 
+
 
 Data_construction_DiD <- function(offset, y){    # y corresponds to the year of protection - so Time = 0 before protection and 1 after protection. 
   offset$Year <- as.numeric(rep(2001:2023,2))        # Have to make Year numeric for >= to work
@@ -322,7 +318,7 @@ annual_defor_CZ <- Data_construction_DiD(annual_defor_CZ, 2009)
 annual_defor_TTF <- Data_construction_DiD(annual_defor_TTF, 2014)
 
 
-                              # b) Outcome variable transformation
+# b) Outcome variable transformation
 
 # log(y+1) transformation of outcome variable required because non-normal properties of count data violate assumptions of 
 # homoscedascity of linear models.
@@ -333,7 +329,7 @@ annual_defor_CFAM$log_annual_defor_newdata <- log(annual_defor_CFAM$Annual_Defor
 annual_defor_TTF$log_annual_defor_newdata <- log(annual_defor_TTF$Annual_Deforestation +1)
 
 
-                              # c) Test for parallel trends
+# c) Test for parallel trends
 
 # Parallel trends in outcomes between treated and control samples in the years before the intervention
 # is a key assumption of difference-in-differences regressions.
@@ -350,8 +346,8 @@ TTF_data_before <- annual_defor_TTF[(annual_defor_TTF$Year <2014),]
 
 ANKa <- lm(log_annual_defor_newdata ~ Year*TreatedF, data= ANK_data_before)
 summary(ANKa)       # If the interaction between Year and TreatedF is not significant, there is no 
-                    # significant difference in the relationship between Year and the log-transformed
-                    # count of deforestation between treated and control samples --> parallel trends assumption holds.
+# significant difference in the relationship between Year and the log-transformed
+# count of deforestation between treated and control samples --> parallel trends assumption holds.
 
 # CFAM #
 
@@ -378,7 +374,7 @@ summary(TTFa)
 
 
 
-                              # d) DiD Regression
+# d) DiD Regression
 
 # Formula = y ~ treatment + time + (treatment x time)
 
@@ -448,112 +444,24 @@ ATT_TTF <- tidy_data5e(modelTTF, "TTF")
 
 ATT_all <- rbind(ATT_ANK, ATT_CZ, ATT_TTF)
 
-
-
-# -----------------------------6) Quantify Avoided Deforestation -----------------------------------------------------------------# 
-
-# Read in datasets containing forest cover and annual forest loss values for whole offset area. 
-# This is so we can use the estimated average treatment effect (ATT) to convert the actual deforestation observed
-# within the offsets following protection to counterfactual levels. The difference between these two values is the amount
-# of deforestation which has been avoided through protection. 
-
-
-
-ANK_dat <- s3read_using(
-  object = "data/GOTTINGEN/Ank_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-)
-   
-CFAM_dat <- s3read_using(
-  object = "data/GOTTINGEN/CFAM_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-) 
-  
-CZ_dat <- s3read_using(
-  object = "data/GOTTINGEN/CZ_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-) 
-
-  
-CZ_dat$VALUE_5 <- 0                                # Fill in missing value. No tree loss in CZ in 2005
-CZ_dat <- CZ_dat[,c(1:7,34,8:33)]                 # Re-order columns to match other datasets
-TTF_dat <- s3read_using(
-  object = "data/GOTTINGEN/Torotorofotsy_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-)
-
-
-            # a) Calculate observed, counterfactual and avoided deforestation (plus Upper and Lower CIs)
-
-
-# Calculate for each offset that showed parallel trends on which the site-based DiD regression was run.
-# Calculate for years following protection. 
-
-
-tidy_data7 <- function(data, model, y){                     
-  data <- data[ ,4:22]                                         # Extract only Forest Loss per Year columns, excluding Year 0.
-  data <- data.frame(t(data))                                  # Transpose
-  names(data) <- "Tree_loss"
-  data$Tree_loss <- data$Tree_loss/10000                      # Convert tree loss in m2 to hectares
-  data$Year <- 1:19
-  data <- data[data$Year>= y,]                                # Remove years before protection of the offset
-  rownames(data) <- 1:nrow(data)
-  data$counterfactual_defor <- (1/(exp(coef(model)[4])))*data$Tree_loss       # Multiply annual tree loss in hectares. eg. In Ankerana, observed deforestation in the offset after protection was 95.8% lower than the counterfactual.
-  data$avoided_defor <- data$counterfactual_defor - data$Tree_loss            # Observed defor was 4.14% of the counterfactual. To scale up to get the amount of deforestation which would have occurred under the 
-  data$counterfactual_upr <- (1/(exp(confint(model)[4,2])))*data$Tree_loss    # the counterfactual scenario need to do 1/0.0414 and multiply by observed deforestation. 
-  data$avoided_defor_upr <- data$counterfactual_upr - data$Tree_loss          # This is the same as doing data$Tree_loss/exp(estimate)
-  data$counterfactual_lwr <- (1/(exp(confint(model)[4,1])))*data$Tree_loss
-  data$avoided_defor_lwr <- data$counterfactual_lwr - data$Tree_loss
-  return(data)
-}
-
-
-ANK_forest <- tidy_data7(ANK_dat, modelANK, 11)            
-CZ_forest <- tidy_data7(CZ_dat, modelCZ, 9)
-TTF_forest <- tidy_data7(TTF_dat, modelTTF, 14)
-
-ANK_forest[10,] <- 0                                                    # Create new row for sums
-ANK_forest[10, c(1,3:8)] <- apply(ANK_forest[, c(1,3:8)], 2, sum)       # Calculate total observed, counterfactual and avoided deforestation following protection.
-
-CZ_forest[12,] <- 0
-CZ_forest[12, c(1,3:8)] <- apply(CZ_forest[, c(1,3:8)], 2, sum)
-
-TTF_forest[7,] <- 0
-TTF_forest[7, c(1,3:8)] <- apply(TTF_forest[, c(1,3:8)], 2, sum)
-
-
-# This represents how much forest would have been lost in the years following protection if the offsets had not been protected (the counterfactual scenario)  
-
-
-#                             b) Combine above datasets into one for plotting                                                                        
-
-
-b <- rbind(ANK_forest[10,], CZ_forest[12,], TTF_forest[7,])
-b$Offset <- c("ANK", "CZ", "TTF")
-b <- b[, c(9, 1, 3, 5, 7, 4, 6, 8)]                                   # Re-arrange columns
-b[, 6:8] <- b[, 6:8]*-1                                               # Multiply by -1 to turn avoided deforestation columns into 'impact on deforestation' which is -ve if the offset has reduced deforestation and positive if it has increased it.
-names(b) <- c("Offset", "Observed_defor", "Counterfactual_Defor", "Counterfactual_Defor_Upper", "Counterfactual_Defor_Lower", "Impact_defor", "Impact_defor_Upper", "Impact_defor_Lower")
-Impact_defor <- b
-
-
-
-
 #--------------------------------7) Fixed Effects Panel regression ----------------------------------------------#
 
 # Second outcome regression. This allows us to estimate the effect of protection across the entire offset portfolio,
 # controlling for site and year fixed effects. This helps to control for any unobserved bias.   
 
 
-                                      # a) Data Construction 
+# a) Data Construction 
 
 ANK_FE_dat <- annual_defor_ANK
 CFAM_FE_dat <- annual_defor_CFAM
 CZ_FE_dat <- annual_defor_CZ
 TTF_FE_dat <- annual_defor_TTF
+
+ANK_FE_dat <- ANK_FE_dat[ANK_FE_dat$Year <= 2019,]
+CFAM_FE_dat <- CFAM_FE_dat[CFAM_FE_dat$Year <= 2019,]
+CZ_FE_dat <- CZ_FE_dat[CZ_FE_dat$Year <= 2019,]
+TTF_FE_dat <- TTF_FE_dat[TTF_FE_dat$Year <= 2019,]
+
 
 # Pool data. 
 
@@ -580,12 +488,10 @@ FE_dat$Tr <- ifelse(FE_dat$TreatedF== "1" & FE_dat$TimeF== "1",1,0)
 # Check for differences between groups and over time. 
 
 plotmeans(log_annual_defor_newdata ~ Sample, data = FE_dat)
-
 plotmeans(log_annual_defor_newdata ~ Year, data = FE_dat)
 
-  
-    
-                                # b) Fixed Effects Panel Regression 
+
+# b) Fixed Effects Panel Regression 
 
 FE_all <- plm(log_annual_defor_newdata ~ Tr, 
               data= FE_dat, index = c("Sample", "Year"), model= "within", effect = "twoways")
@@ -603,7 +509,7 @@ summary(FE_all)
 
 FE_datMinusCFAM <- FE_dat[FE_dat$Sample != "CFAM" & FE_dat$Sample != "CFAM1",]
 FE_MinusCFAM <- plm(log_annual_defor_newdata ~ Tr, 
-              data= FE_datMinusCFAM, index = c("Sample", "Year"), model= "within", effect = "twoways")
+                    data= FE_datMinusCFAM, index = c("Sample", "Year"), model= "within", effect = "twoways")
 summary(FE_MinusCFAM)
 
 
@@ -611,7 +517,7 @@ summary(FE_MinusCFAM)
 (exp(confint(FE_MinusCFAM))-1)*100           # EXCLUDING CFAM
 
 
-                                # c) Tests 
+# c) Tests 
 
 # Compare to simple ols regression to test whether the fixed effects are needed. 
 
@@ -644,6 +550,33 @@ summary(m1)
 # Read in datasets containing forest cover and annual forest loss values for whole offset area. 
 # Remove unwanted columns and convert annual tree loss in m2 to hectares.
 
+ANK_dat <- s3read_using(
+  object = "data/GOTTINGEN/Ank_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+
+CFAM_dat <- s3read_using(
+  object = "data/GOTTINGEN/CFAM_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+
+CZ_dat <- s3read_using(
+  object = "data/GOTTINGEN/CZ_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+) 
+
+
+CZ_dat$VALUE_5 <- 0                                # Fill in missing value. No tree loss in CZ in 2005
+CZ_dat <- CZ_dat[,c(1:7,34,8:33)]                 # Re-order columns to match other datasets
+TTF_dat <- s3read_using(
+  object = "data/GOTTINGEN/Torotorofotsy_var.dbf",
+  FUN = read.dbf,
+  bucket = "trase-app"
+)
+
 tidy_data8 <- function(data){                     
   data <- data[ ,4:22]                                         # Extract only Forest Loss per Year columns, excluding Year 0.
   data <- data.frame(t(data))                                  # Transpose
@@ -663,6 +596,7 @@ TTF_dat <- tidy_data8(TTF_dat)
 
 offsets_defor <- cbind(ANK_dat[,c(2,1)], CZ_dat[,1], CFAM_dat[,1], TTF_dat[,1])   
 names(offsets_defor) <-  c("Year", "ANK", "CZ", "CFAM", "TTF")               # ANK, CZ, CFAM, TTF columns show the total amount deforestation in the offset each year (in hectares)
+
 
 # Set annual deforestation before protection of the offset to 0 because we're only interested in avoided deforestation after protection.
 
@@ -697,87 +631,21 @@ offsets_defor$avoided_defor_lwr <- offsets_defor$counterfactual_defor_lwr - offs
 # difference-in-difference regressions to create a single dataframe for plotting.
 
 sum_overall_defor <- data.frame(matrix(nrow = 1, ncol =8))
-names(sum_overall_defor) <- names(Impact_defor)
+names(sum_overall_defor) <- c("Offset", "Observed_defor", "Counterfactual_Defor", "Counterfactual_Defor_Upper", "Counterfactual_Defor_Lower", "Impact_defor", "Impact_defor_Upper", "Impact_defor_Lower")
 sum_overall_defor$Offset <- "All"
 sum_overall_defor[1,2:8] <- apply(offsets_defor[, c(6,7, 9, 11, 8, 10, 12)], 2, sum)
 sum_overall_defor[1, c(6,7,8)] <- sum_overall_defor[1, c(6,7,8)]*-1                   # Multiply by -1 to turn avoided deforestation columns into 'impact on deforestation' 
-                                                                                      # which is -ve if the offset has reduced deforestation and positive if it has increased it.
+# which is -ve if the offset has reduced deforestation and positive if it has increased it.
 
+sum_overall_defor
+subset_years <- 14:19
 
-Impact_defor <- rbind(Impact_defor, sum_overall_defor)
+mean_avoided <- mean(offsets_defor$avoided_defor[offsets_defor$Year %in% subset_years])
+impact_mean <- -sum_overall_defor$Impact_defor
+impact_upper <- -sum_overall_defor$Impact_defor_Lower
+impact_lower <- -sum_overall_defor$Impact_defor_Upper
 
-                              # Convert treatment effect from FE estimate to Cohen's D for comparison with Borner et al
-
-# Cohen's d effect size is (mean of treated group - mean of control group)/ standard deviation of pooled data
-# However, Borner et al use the standard deviation of the control group so we will use that instead. 
-
-
-test <- offsets_defor
-
-# Don't actually need to do deforestation as a % of area but will keep because could be useful
-
-test$counterfactual_defor_perc <- 0
-test <- test[ ,c(1:7,13,8:12)]
-
-test$avoid_defor_perc <- 0
-test <- test[ ,c(1:9,14,10:13)]
-
-test$Area <- 0
-test$Area[c(1,2)] <- 3787                   # Area of CZ
-test$Area[c(3,4)] <- 3787 + 6904            # Area of CZ + ANK
-test$Area[5] <- (3787 + 6904 + 9423)        # Area of CZ + ANK + CFAM
-test$Area[6:11] <- (3787 + 6904 + 9423 + 8626)     # Total area of offsets
-
-test$counterfactual_defor_perc <- (test$counterfactual_defor/test$Area)*100
-
-test$avoid_defor_perc <- (test$avoided_defor/test$Area)*100
-
-# Calculation of Cohen's d:
-# Treated sample is the observed annual deforestation across the entire offset portfolio following protection
-# Control sample is the counterfactual annual deforestation for the entire offset portfolio following protection
-
-# We are using this instead of deforestation in the matched control sample because because my estimates of treatment effect (the % difference and the hectares of avoided deforestation) 
-# weren’t derived from the matched control sample itself but the estimated counterfactual (mean annual defor in the matched control adjusted to account for the pre-intervention differences between groups – the difference-in-differences). 
-
-
-(mean(test$Sum_defor) - mean(test$counterfactual_defor))/sd(test$counterfactual_defor)
-
-# Cohen's d = - 0.51. 
-
-# Test using the standard deviation of the pooled data:
-
-x <- matrix(nrow = 22, ncol = 1)
-x <- c(test$Sum_defor, test$counterfactual_defor)
-
-sd(x)
-
-(mean(test$Sum_defor) - mean(test$counterfactual_defor))/sd(x)
-
-# Repeat for results from each individual offset
-
-ANK_forest2 <- ANK_forest[1:9,]
-
-
-(mean(ANK_forest2$Tree_loss) - mean(ANK_forest2$counterfactual_defor))/sd(ANK_forest2$counterfactual_defor)
-
-# Cohen's D for Ankerana = -1.03
-
-CZ_forest2 <- CZ_forest[1:11,]
-
-(mean(CZ_forest2$Tree_loss) - mean(CZ_forest2$counterfactual_defor))/sd(CZ_forest2$counterfactual_defor)
-
-
-# Cohen's D for Conservation Zone is -0.63
- 
-TTF_forest2 <- TTF_forest[1:6,]
-
-(mean(TTF_forest2$Tree_loss) - mean(TTF_forest2$counterfactual_defor))/sd(TTF_forest2$counterfactual_defor)
-
-# Cohen's D for Torotorofotsy is 1.29
-
-
-
-
-
-
-
+years_upper <- impact_upper / mean_avoided
+years_lower <- impact_lower / mean_avoided
+2014 + years_upper
+2014 + years_lower
