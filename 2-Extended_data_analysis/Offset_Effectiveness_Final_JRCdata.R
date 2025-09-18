@@ -620,32 +620,18 @@ summary(m1)
 # Read in datasets containing forest cover and annual forest loss values for whole offset area. 
 # Remove unwanted columns and convert annual tree loss in m2 to hectares.
 
-ANK_dat <- s3read_using(
-  object = "data/GOTTINGEN/Ank_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-)
+## Replication: there was no change in this part of the code, as we were not able to reconstruct these files, so this is the code using the original data provided
 
-CFAM_dat <- s3read_using(
-  object = "data/GOTTINGEN/CFAM_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-) 
+ANK_dat <- read.dbf("Ank_var.dbf")
 
-CZ_dat <- s3read_using(
-  object = "data/GOTTINGEN/CZ_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-) 
+CFAM_dat <- read.dbf("CFAM_var.dbf")
 
+CZ_dat <- read.dbf("CZ_var.dbf")
 
 CZ_dat$VALUE_5 <- 0                                # Fill in missing value. No tree loss in CZ in 2005
 CZ_dat <- CZ_dat[,c(1:7,34,8:33)]                 # Re-order columns to match other datasets
-TTF_dat <- s3read_using(
-  object = "data/GOTTINGEN/Torotorofotsy_var.dbf",
-  FUN = read.dbf,
-  bucket = "trase-app"
-)
+
+TTF_dat <- read.dbf("Torotorofotsy_var.dbf")
 
 tidy_data8 <- function(data){                     
   data <- data[ ,4:22]                                         # Extract only Forest Loss per Year columns, excluding Year 0.
