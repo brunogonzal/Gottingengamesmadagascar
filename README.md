@@ -26,3 +26,7 @@ The original scripts and data can be found in [this repository](https://github.c
 - 5-Miscellaneous
 	
 	This folder holds the scripts used by the replicators to help better understand the data.
+
+- Figs_Dashboard_SpecCurve_replication
+
+    This folder contains all the necessary materials and codes to reproduce the dashboard and the specification curve as presented in the report.
