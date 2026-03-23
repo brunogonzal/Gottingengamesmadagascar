@@ -111,42 +111,74 @@ TTFCONT <- rbind(TTF, Control)
 # - caliper based on the distribution of values for the 5 essential 
 #   covariates within the treated sample.
 
+# Seb_dataclean <- function(data, x){
+#   
+#   # Replace all -9999 with NA
+#   # data <- data %>% na_if(-9999)  # Finn: This is the line in the original script, which throws an error
+#   data <- data %>% replace_with_na_all(condition = ~.x == -9999) # Finn: This is my fix
+#   
+#   # We keep observations without na
+#   data <- data %>% drop_na()
+#   
+#   # We determine the caliper
+#   caliper_dist_def<-x*sd(data$Dist_defor[data$treated==1])
+#   caliper_slope<-x*sd(data$Slope[data$treated==1])
+#   caliper_elev<-x*sd(data$Elevation[data$treated==1])
+#   caliper_edge<-x*sd(data$Dist_edge[data$treated==1])
+#   caliper_road <- x*sd(data$Dist_road[data$treated==1])
+#   
+#   # We keep control observations that are on the same support
+#   data <- data[data$Dist_defor < max(data$Dist_defor[data$treated==1])+caliper_dist_def,]  
+#   data <- data[data$Dist_defor > min(data$Dist_defor[data$treated==1])- caliper_dist_def,]
+#   
+#   data <- data[data$Slope < max(data$Slope[data$treated==1])+caliper_slope,]      
+#   data <- data[data$Slope > min(data$Slope[data$treated==1])- caliper_slope,]
+#   
+#   data <- data[data$Elevation < max(data$Elevation[data$treated==1])+caliper_elev,]  
+#   data <- data[data$Elevation > min(data$Elevation[data$treated==1])-caliper_elev,]  
+#   
+#   data <- data[data$Dist_edge < max(data$Dist_edge[data$treated==1])+caliper_edge,]
+#   data <- data[data$Dist_edge > min(data$Dist_edge[data$treated==1])-caliper_edge,]
+#   
+#   data <- data[data$Dist_road < max(data$Dist_road[data$treated==1])+caliper_road,]
+#   data <- data[data$Dist_road > min(data$Dist_road[data$treated==1])-caliper_road,]
+#   
+#   
+# }
+
 Seb_dataclean <- function(data, x){
   
-  # Replace all -9999 with NA
-  # data <- data %>% na_if(-9999)  # Finn: This is the line in the original script, which throws an error
-  data <- data %>% replace_with_na_all(condition = ~.x == -9999) # Finn: This is my fix
+  data[data == -9999] <- NA
+  data <- data[complete.cases(data), ]
   
-  # We keep observations without na
-  data <- data %>% drop_na()
+
+  # Select treated rows once
+  idx_treated <- data$treated == 1
   
-  # We determine the caliper
-  caliper_dist_def<-x*sd(data$Dist_defor[data$treated==1])
-  caliper_slope<-x*sd(data$Slope[data$treated==1])
-  caliper_elev<-x*sd(data$Elevation[data$treated==1])
-  caliper_edge<-x*sd(data$Dist_edge[data$treated==1])
-  caliper_road <- x*sd(data$Dist_road[data$treated==1])
+  # Variables used in the caliper filter
+  vars <- c("Dist_defor", "Slope", "Elevation", "Dist_edge", "Dist_road")
   
-  # We keep control observations that are on the same support
-  data <- data[data$Dist_defor < max(data$Dist_defor[data$treated==1])+caliper_dist_def,]  
-  data <- data[data$Dist_defor > min(data$Dist_defor[data$treated==1])- caliper_dist_def,]
+  # Compute SDs on treated observations
+  sds <- vapply(vars, function(v) stats::sd(data[idx_treated, v]), numeric(1))
   
-  data <- data[data$Slope < max(data$Slope[data$treated==1])+caliper_slope,]      
-  data <- data[data$Slope > min(data$Slope[data$treated==1])- caliper_slope,]
+  # Compute lower and upper bounds
+  mins <- vapply(vars, function(v) min(data[idx_treated, v]), numeric(1)) - x * sds
+  maxs <- vapply(vars, function(v) max(data[idx_treated, v]), numeric(1)) + x * sds
   
-  data <- data[data$Elevation < max(data$Elevation[data$treated==1])+caliper_elev,]  
-  data <- data[data$Elevation > min(data$Elevation[data$treated==1])-caliper_elev,]  
+  # Build logical index only once
+  keep <- rep(TRUE, nrow(data))
+  for (i in seq_along(vars)) {
+    v <- vars[i]
+    keep <- keep & data[[v]] >= mins[i] & data[[v]] <= maxs[i]
+  }
   
-  data <- data[data$Dist_edge < max(data$Dist_edge[data$treated==1])+caliper_edge,]
-  data <- data[data$Dist_edge > min(data$Dist_edge[data$treated==1])-caliper_edge,]
-  
-  data <- data[data$Dist_road < max(data$Dist_road[data$treated==1])+caliper_road,]
-  data <- data[data$Dist_road > min(data$Dist_road[data$treated==1])-caliper_road,]
-  
-  
+  data[keep, , drop = FALSE]
 }
 
 ANKCONT <- Seb_dataclean(data = ANKCONT, x= 1)
+
+
+
 ANKCONT$ID <- seq(nrow(ANKCONT))              # Add column for observation ID
 rownames(ANKCONT) <- ANKCONT$ID
 
@@ -781,6 +813,103 @@ TTF_forest2 <- TTF_forest[1:6,]
 
 
 
+# =========================
+# Sensitivity to unmeasured confounding with sensemakr
+# =========================
 
+install_if_needed <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
+}
 
+install_if_needed("sensemakr")
+library(sensemakr)
 
+# ---- Site-level DiD models ----
+
+sens_ANK <- sensemakr(
+  model = modelANK,
+  treatment = "TreatedF1:TimeF1",
+  q = 1,
+  alpha = 0.05
+)
+
+sens_CZ <- sensemakr(
+  model = modelCZ,
+  treatment = "TreatedF1:TimeF1",
+  q = 1,
+  alpha = 0.05
+)
+
+sens_TTF <- sensemakr(
+  model = modelTTF,
+  treatment = "TreatedF1:TimeF1",
+  q = 1,
+  alpha = 0.05
+)
+
+summary(sens_ANK)
+summary(sens_CZ)
+summary(sens_TTF)
+
+plot(sens_ANK)
+plot(sens_CZ)
+plot(sens_TTF)
+
+# ---- FE model via lm equivalent ----
+
+FE_lm <- lm(
+  log_annual_defor ~ Tr + factor(Sample) + factor(Year),
+  data = FE_dat
+)
+
+sens_FE <- sensemakr(
+  model = FE_lm,
+  treatment = "Tr",
+  q = 1,
+  alpha = 0.05
+)
+
+summary(sens_FE)
+plot(sens_FE)
+
+# ---- Optional: benchmarked model on matched pixel-level data ----
+
+lm_ANK_cov <- lm(
+  Tree_loss ~ treated + Slope + Elevation + Dist_road + Dist_edge + Dist_defor,
+  data = m.data.ANK
+)
+
+sens_lm_ANK_cov <- sensemakr(
+  model = lm_ANK_cov,
+  treatment = "treated",
+  benchmark_covariates = c("Slope", "Elevation", "Dist_road", "Dist_edge", "Dist_defor"),
+  kd = c(1, 2, 3)
+)
+
+summary(sens_lm_ANK_cov)
+plot(sens_lm_ANK_cov)
+plot(sens_lm_ANK_cov, type ="extreme")
+# ---- Optional extraction helper ----
+
+extract_sense <- function(s, label) {
+  out <- data.frame(
+    model = label,
+    estimate = s$estimate,
+    se = s$se,
+    t_statistic = s$t_statistic,
+    dof = s$dof,
+    partial_r2 = s$partial_r2,
+    robustness_value = s$robustness_value,
+    robustness_value_alpha = s$robustness_value_alpha
+  )
+  out
+}
+
+sens_results <- dplyr::bind_rows(
+  extract_sense(sens_ANK, "ANK_DiD"),
+  extract_sense(sens_CZ, "CZ_DiD"),
+  extract_sense(sens_TTF, "TTF_DiD"),
+  extract_sense(sens_FE, "Portfolio_FE_lm")
+)
+
+print(sens_results)
